@@ -17,6 +17,10 @@ import pythoncom
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+# 版本信息
+VERSION = "0.2"
+APP_NAME = "多标签文件浏览器"
+
 pythoncom.CoInitialize()  # 添加在模块初始化处
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, callback):
@@ -39,7 +43,7 @@ class FileChangeHandler(FileSystemEventHandler):
 
 class FileExplorerFrame(wx.Frame):
     def __init__(self):
-        super().__init__(None, title="多标签文件浏览器", size=(1024, 768))
+        super().__init__(None, title=f"{APP_NAME} v{VERSION}", size=(1024, 768))
         
         # 初始化基本变量
         self.current_path = os.path.expanduser("~")
@@ -151,6 +155,20 @@ class FileExplorerFrame(wx.Frame):
 
     def on_tab_switch(self, event, side):
         """切换标签页时更新监控路径"""
+        notebook = self.left_notebook if side == "left" else self.right_notebook
+        index = event.GetSelection()
+        
+        # 如果切换到"+"标签页，则创建新标签页并选中它
+        if notebook.GetPageText(index) == "+":
+            # 获取当前活动标签页的路径
+            current_tab = self.get_current_tab(side)
+            path = current_tab['path'] if current_tab else os.path.expanduser("~")
+            self.add_tab(path, side)
+            # 确保"+"标签页保持不选中状态
+            notebook.SetSelection(notebook.GetPageCount() - 2)
+            event.Veto()  # 阻止切换到"+"标签页
+            return
+            
         current = self.get_current_tab(side)
         if current:
             self.start_watching(current['path'])
@@ -315,6 +333,8 @@ class FileExplorerFrame(wx.Frame):
             # 在"+"标签页之前插入新标签页
             self.tabs[side].append(tab_data)
             notebook.InsertPage(notebook.GetPageCount() - 1, panel, os.path.basename(initial_path) or initial_path, True)
+            # 确保"+"标签页保持不选中状态
+            notebook.SetSelection(notebook.GetPageCount() - 2)
         
         # 刷新文件列表
         self.refresh_file_list(tab_data)
@@ -1328,6 +1348,8 @@ class FileExplorerFrame(wx.Frame):
                 current_tab = self.get_current_tab(side)
                 path = current_tab['path'] if current_tab else os.path.expanduser("~")
                 self.add_tab(path, side)
+                # 确保"+"标签页保持不选中状态
+                notebook.SetSelection(notebook.GetPageCount() - 2)
             elif tab_hit[0] < len(self.tabs[side]):  # 不是"+"标签页
                 self.close_tab(tab_hit[0], side)
         else:

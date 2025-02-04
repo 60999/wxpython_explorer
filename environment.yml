@@ -1,0 +1,12 @@
+name: wx_explorer
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - wxpython=4.1
+  - pywin32
+  - pip
+  - pip:
+    - send2trash==1.8.0
+    - watchdog==2.1.9
